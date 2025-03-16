@@ -32,15 +32,19 @@ def transcribe_audio(audio_file):
         st.error(f"Error during transcription: {e}")
         return ""
 
-# Function to generate captions using Gemini
-def generate_captions(text):
-    try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(f"Generate clear, concise captions for the following text: {text}")
-        return response.text.strip()
-    except Exception as e:
-        st.error(f"Error during caption generation: {e}")
-        return "error"
+# Function to generate captions using Gemini with retries
+def generate_captions(text, retries=3):
+    for attempt in range(retries):
+        try:
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(f"Generate clear, concise captions for the following text: {text}")
+            return response.text.strip()
+        except Exception as e:
+            if attempt < retries - 1:
+                time.sleep(3)  # Wait before retrying
+            else:
+                st.error(f"Error during caption generation: {e}")
+                return "error"
 
 # Step 1: Generate the Video
 def generate_video(text):
@@ -82,23 +86,23 @@ def generate_video(text):
 def check_video_status(video_id):
     status_url = f"https://api.heygen.com/v1/video_status.get?video_id={video_id}"
 
-    while True:
-        response = requests.get(status_url, headers=headers)
-        if response.status_code == 200:
-            status_data = response.json()
-            status = status_data["data"].get("status", "unknown")
+    with st.spinner("🔄 Processing video..."):
+        while True:
+            response = requests.get(status_url, headers=headers)
+            if response.status_code == 200:
+                status_data = response.json()
+                status = status_data["data"].get("status", "unknown")
 
-            if status == "completed":
-                return status_data["data"].get("video_url")
-            elif status == "failed":
-                st.error("❌ Video generation failed!")
-                return None
+                if status == "completed":
+                    return status_data["data"].get("video_url")
+                elif status == "failed":
+                    st.error("❌ Video generation failed!")
+                    return None
+                else:
+                    time.sleep(5)
             else:
-                st.write(f"🔄 Processing video... Status: {status}")
-                time.sleep(5)
-        else:
-            st.error(f"Error retrieving status: {response.status_code}")
-            return None
+                st.error(f"Error retrieving status: {response.status_code}")
+                return None
 
 # Streamlit UI
 st.title("🎬 Auto Video Creator from Audio")
