@@ -10,7 +10,7 @@ import whisper
 VOICE_ID = st.secrets["voice"]["VOICE_ID"]
 AVATAR_ID = st.secrets["avatar"]["AVATAR_ID"]
 HEYGEN_API_KEY = st.secrets["heygen"]["HEYGEN_API_KEY"]
-GEMINI_API_KEY = st.secrets["google"]["GEMINI_API_KEY"]
+GEMINI_API_KEY = st.secrets["google"]["gemini_api_key"]
 # API Headers
 headers = {
     "X-Api-Key": HEYGEN_API_KEY,
