@@ -7,8 +7,8 @@ import base64
 import whisper
 
 
-VOICE_ID = st.secrets["heygen"]["VOICE_ID"]
-AVATAR_ID = st.secrets["heygen"]["AVATAR_ID"]
+VOICE_ID = st.secrets["voice"]["VOICE_ID"]
+AVATAR_ID = st.secrets["avatar"]["AVATAR_ID"]
 HEYGEN_API_KEY = st.secrets["heygen"]["HEYGEN_API_KEY"]
 GEMINI_API_KEY = st.secrets["google"]["GEMINI_API_KEY"]
 # API Headers
