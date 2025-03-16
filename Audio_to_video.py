@@ -3,14 +3,13 @@ import google.generativeai as genai
 import requests
 import os
 import time
-import base64
 import whisper
-
 
 VOICE_ID = st.secrets["voice"]["VOICE_ID"]
 AVATAR_ID = st.secrets["avatar"]["AVATAR_ID"]
 HEYGEN_API_KEY = st.secrets["heygen"]["HEYGEN_API_KEY"]
 GEMINI_API_KEY = st.secrets["google"]["gemini_api_key"]
+
 # API Headers
 headers = {
     "X-Api-Key": HEYGEN_API_KEY,
@@ -27,7 +26,8 @@ def transcribe_audio(audio_file):
             f.write(audio_file.getbuffer())
 
         result = model.transcribe(audio_path)
-        return result["text"]
+        os.remove(audio_path)  # Cleanup
+        return result["text"].strip()
     except Exception as e:
         st.error(f"Error during transcription: {e}")
         return ""
@@ -36,8 +36,8 @@ def transcribe_audio(audio_file):
 def generate_captions(text):
     try:
         model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(f"Generate captions for the following text: {text}")
-        return response.text
+        response = model.generate_content(f"Generate clear, concise captions for the following text: {text}")
+        return response.text.strip()
     except Exception as e:
         st.error(f"Error during caption generation: {e}")
         return ""
@@ -73,11 +73,10 @@ def generate_video(text):
         if "data" in response_data and "video_id" in response_data["data"]:
             return response_data["data"]["video_id"]
         else:
-            st.error("Error: Unable to retrieve video ID.")
-            return None
+            st.error("Error: Unable to retrieve video ID from response.")
     else:
         st.error(f"Error: {response.status_code}, {response.text}")
-        return None
+    return None
 
 # Step 2: Check Video Status
 def check_video_status(video_id):
@@ -87,15 +86,15 @@ def check_video_status(video_id):
         response = requests.get(status_url, headers=headers)
         if response.status_code == 200:
             status_data = response.json()
-            status = status_data["data"]["status"]
+            status = status_data["data"].get("status", "unknown")
 
             if status == "completed":
-                return status_data["data"].get("video_url", "No video URL found.")
+                return status_data["data"].get("video_url")
             elif status == "failed":
-                st.error("Video generation failed!")
+                st.error("❌ Video generation failed!")
                 return None
             else:
-                st.write(f"Video is still processing... Current status: {status}")
+                st.write(f"🔄 Processing video... Status: {status}")
                 time.sleep(5)
         else:
             st.error(f"Error retrieving status: {response.status_code}")
@@ -111,12 +110,12 @@ if uploaded_file:
 
     st.write("### Step 1: Transcribing Audio...")
     transcript = transcribe_audio(uploaded_file)
-    st.write("Transcription:", transcript)
+    st.write("📝 Transcription:", transcript)
 
     if transcript:
         st.write("### Step 2: Generating Captions...")
         captions = generate_captions(transcript)
-        st.write("Captions:", captions)
+        st.write("🗨️ Captions:", captions)
 
         st.write("### Step 3: Creating Avatar Video...")
         video_id = generate_video(transcript)
@@ -127,8 +126,8 @@ if uploaded_file:
             if video_url:
                 st.video(video_url)
                 st.success("✅ Video generated successfully!")
-                st.write("[Download Video]", video_url)
+                st.markdown(f"[📥 Download Video]({video_url})")
             else:
                 st.error("❌ Failed to retrieve video URL.")
         else:
-            st.error("❌ Failed to generate video. Check API responses.")
+            st.error("❌ Video generation failed. Please check the API logs.")
