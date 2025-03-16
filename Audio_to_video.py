@@ -40,7 +40,7 @@ def generate_captions(text):
         return response.text.strip()
     except Exception as e:
         st.error(f"Error during caption generation: {e}")
-        return ""
+        return "error"
 
 # Step 1: Generate the Video
 def generate_video(text):
